@@ -11,6 +11,8 @@ private:
 	float coordX;
 	float coordY;
 
+	bool eneShot = false;
+
 public:
 
 	Position() {
@@ -102,15 +104,27 @@ public:
 		}
 	}
 
+	bool enemyFire(){
+		return eneShot;
+	}
+
 	void update(RenderWindow* _wnd) {
 		if (_enemy) {
-			_enemy->Update(_wnd);
+			bool enemyShoot = _enemy->Update(_wnd);
+
+			eneShot = enemyShoot;
+
 		} else if (_ally) {
-			_ally->Update(_wnd);
+			bool allyAlive = _ally->Update(_wnd);
+
+			if (!allyAlive) {
+				hurtAlly();
+			}
+
 		} else {
 			if (rand() % 100 < 50) {
 				_enemy = new Enemy(coordX, coordY);
-			} else if (rand() % 100 < 50) {
+			} else if (rand() % 100 < 75) {
 				_ally = new Ally(coordX, coordY);
 			}
 		}

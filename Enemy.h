@@ -14,6 +14,9 @@ private:
 	float timeOn;
 	float timeOff;
 
+	float enemyX;
+	float enemyY;
+
 	Vector2f _randomPos(Vector2u maxPos) {
 		Vector2f random((float)(rand() % maxPos.x), (float)(rand() % maxPos.y));
 		return random;
@@ -24,15 +27,18 @@ public:
 	Enemy(float x, float y) {
 		srand(time(NULL));
 
+		enemyX = x;
+		enemyY = y;
+
 		enemy.loadFromFile("Images/Enemy.png");
 		_enemy.setTexture(enemy);
 		_enemy.setScale(0.2f, 0.2f);
-		_enemy.setPosition(x, y);
+		_enemy.setPosition(enemyX, enemyY);
 
 		_isAlive = true;
 		isVisible = false;
-		timeOn = 3.0f;
-		timeOff = 1.0f;
+		timeOn = 1.5f;
+		timeOff = 0.5f;
 	}
 
 	bool isAlive() {
@@ -58,9 +64,9 @@ public:
 	}
 
 	//Actualizar la posicion del enemigo
-	void Update(RenderWindow* _wnd) {
+	bool Update(RenderWindow* _wnd) {
 		if (!_isAlive) {
-			return;
+			return false;
 		}
 
 		//Tira una probabilidad para ver si se activa
@@ -71,16 +77,36 @@ public:
 
 				if (rand() % 100 < 50) {
 					isVisible = true;
+
+					enemy.loadFromFile("Images/Enemy.png");
+					_enemy.setTexture(enemy);
+					_enemy.setScale(0.2f, 0.2f);
+					_enemy.setPosition(enemyX, enemyY);
 				}
 			}
 
 		} else {
-			//Cuando pasa el tiempo, el enemigo se va
+			//Cuando pasa el tiempo, el enemigo se va o dispara
 			if (clock.getElapsedTime().asSeconds() > timeOn) {
-				isVisible = false;
+
+				if (rand() % 100 < 10) {
+					enemy.loadFromFile("Images/EnemyB.png");
+					_enemy.setTexture(enemy);
+					_enemy.setScale(0.2f, 0.2f);
+					_enemy.setPosition(enemyX, enemyY);
+
+					clock.restart();
+					return true;
+				}
+				else {
+					isVisible = false;
+				}
+
 				clock.restart();
 			}
 		}
+
+		return false;
 	}
 
 	void Draw(RenderWindow* _wnd) {

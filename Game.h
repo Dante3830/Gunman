@@ -6,9 +6,11 @@
 class Game {
 
 private:
-	//El fondo
+	//Texturas y sprites
 	Texture background;
+	Texture Red;
 	Sprite West;
+	Sprite red;
 
 	//Los objetos que necesita el juego
 	RenderWindow* _wnd;
@@ -26,6 +28,8 @@ private:
 	//Puntuacion y vidas
 	int points;
 	int lives;
+
+	bool playerHurt = false;
 
 	//Transformar el entero de puntuacion a string
 	void updateScore() {
@@ -57,6 +61,11 @@ public:
 
 		background.loadFromFile("Images/West.png");
 		West.setTexture(background);
+
+		Red.loadFromFile("Images/fondoRojo.jpg");
+		red.setTexture(Red);
+		red.setColor(Color::Color(255, 255, 255, 100));
+		red.setScale(2.0f, 1.0f);
 
 		font.loadFromFile("Retro_Gaming.ttf");
 
@@ -122,6 +131,15 @@ public:
 		//Llamamos
 		for (int i = 0; i < 5; i++) {
 			_positions[i].update(_wnd);
+			
+			if (_positions[i].enemyFire()) {
+				playerHurt = true;
+				lives--;
+
+				_wnd->draw(red);
+
+				updateLives();
+			}
 		}
 	}
 
@@ -170,6 +188,10 @@ public:
 		//La mira
 		_player->Draw(_wnd);
 		
+		if (playerHurt == true) {
+			_wnd->draw(red);
+		}
+
 		//Si el jugador se queda sin vidas, se termina el juego
 		if (lives <= 0) {
 			lives = 0;
@@ -183,9 +205,9 @@ public:
 
 	//El juego que se cargara en el main.cpp
 	void Gunman() {
-		while (_wnd->isOpen()) {
-			srand(time(NULL));
+		srand(time(NULL));
 
+		while (_wnd->isOpen()) {
 			process();
 			update();
 			drawing();

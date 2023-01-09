@@ -30,9 +30,9 @@ public:
 		_ally.setPosition(x, y);
 
 		_isAlive = true;
-		isVisible = false;
-		timeOn = 3.0f;
-		timeOff = 3.0f;
+		isVisible = true;
+		timeOn = 2.0f;
+		timeOff = 1.0f;
 	}
 
 	bool isAlive() {
@@ -57,30 +57,29 @@ public:
 		isVisible = false;
 	}
 
+	void disable() {
+
+	}
+
 	//Actualizar la posicion del aliado
-	void Update(RenderWindow* _wnd) {
+	bool Update(RenderWindow* _wnd) {
+		//Si el aliado sigue vivo, devolvemos true
 		if (!_isAlive) {
-			return;
+			return false;
 		}
 
 		//Tira una posibilidad para ver si se activa
-		if (!isVisible) {
+		if (isVisible) {
 
-			if (clock.getElapsedTime().asSeconds() > timeOff) {
-				clock.restart();
-
-				if (rand() % 100 < 50) {
-					isVisible = true;
-				}
-			}
-
-		} else {
-			//Cuando pasa el tiempo, el enemigo se va
 			if (clock.getElapsedTime().asSeconds() > timeOn) {
+				_isAlive = false;
 				isVisible = false;
-				clock.restart();
+			
+				return false;
 			}
 		}
+
+		return true;
 	}
 
 	void Draw(RenderWindow* _wnd) {

@@ -1,133 +1,231 @@
 #pragma once
 #include "stdafx.h"
-#include "Enemy.h"
-#include "Ally.h"
+#include "Position.h"
+#include "Player.h"
 
-class Position {
+class Game {
+
 private:
-	Enemy* _enemy = NULL;
-	Ally* _ally = NULL;
+	//Texturas y sprites
+	Texture background;
+	Texture Red;
+	Sprite West;
+	Sprite red;
 
-	float coordX;
-	float coordY;
+	//Los objetos que necesita el juego
+	RenderWindow* _wnd;
+	PlayerCrossHair* _player;
+	Position* _positions;
 
-	bool eneShot = false;
+	//La fuente y textos
+	Font font;
+	Text Score;
+	Text _score;
+	Text Lives;
+	Text _lives;
+	Text GameOver;
+
+	//Puntuacion y vidas
+	int points;
+	int lives;
+
+	int framesSinceShoot = 0;
+
+	bool playerHurt = false;
+
+	//Transformar el entero de puntuacion a string
+	void updateScore() {
+		char pts[100];
+		_itoa_s(points, pts, 10);
+		_score.setString(pts);
+	}
+
+	//Transformar el entero de vidas a string
+	void updateLives() {
+		char pts[10];
+		_itoa_s(lives, pts, 10);
+		_lives.setString(pts);
+	}
 
 public:
 
-	Position() {
+	Game() {
+		_wnd = new RenderWindow(VideoMode(800, 600), "Crosshair");
+		_player = new PlayerCrossHair();
+		_positions = new Position[5];
+
+		for (int i = 0; i < 5; i++) {
+			_positions[i].setCoordenates(i);
+		}
 		
+		points = 0;
+		lives = 3;
+
+		background.loadFromFile("Images/West.png");
+		West.setTexture(background);
+
+		Red.loadFromFile("Images/fondoRojo.jpg");
+		red.setTexture(Red);
+		red.setColor(Color::Color(255, 255, 255, 100));
+		red.setScale(2.0f, 1.0f);
+
+		font.loadFromFile("Retro_Gaming.ttf");
+
+		//Mostrar el puntaje
+		Score.setFont(font);
+		Score.setPosition(0.0f, 0.0f);
+		Score.setCharacterSize(30.0f);
+		Score.setFillColor(Color::Color(115, 55, 8));
+		Score.setString("Score");
+
+		_score.setFont(font);
+		_score.setPosition(0.0f, 30.0f);
+		_score.setCharacterSize(30.0f);
+		_score.setFillColor(Color::Black);
+
+		//Mostrar las vidas
+		Lives.setFont(font);
+		Lives.setPosition(698.0f, 0.0f);
+		Lives.setCharacterSize(30.0f);
+		Lives.setFillColor(Color::Color(115, 55, 8));
+		Lives.setString("Lives");
+
+		_lives.setFont(font);
+		_lives.setPosition(700.0f, 30.0f);
+		_lives.setCharacterSize(30.0f);
+		_lives.setFillColor(Color::Black);
+
+		//Mostrar "Game Over" cuando el jugador pierda
+		GameOver.setFont(font);
+		GameOver.setPosition(230.0f, 250.0f);
+		GameOver.setCharacterSize(50.0f);
+		GameOver.setFillColor(Color::Red);
+		GameOver.setString("GAME OVER");
+
+		updateScore();
+		updateLives();
+
 	}
 
-	bool onTop(float x, float y) {
-		if (_enemy) {
-			if (_enemy->onTop(x, y)) {
-				_enemy->Defeat();
-				return true;
-			}
-		}
-		else if (_ally) {
-			if (_ally->onTop(x, y)) {
-				_ally->Hurt();
-				return true;
+	//Procesamos los eventos que ocurran
+	void process() {
+		Event evt;
+
+		while (_wnd->pollEvent(evt)) {
+			switch (evt.type) {
+			case Event::Closed:
+				_wnd->close();
+				break;
+			case Event::MouseMoved:
+				_player->Positionate(evt.mouseMove.x, evt.mouseMove.y);
+				break;
+			case Event::MouseButtonPressed:
+				if (evt.mouseButton.button == Mouse::Button::Left)
+					shoot();
+				break;
 			}
 		}
 
-		return false;
-	}
-
-	bool hasEnemy() {
-		if (_enemy) {
-			return true;
-		}
-		else {
-			return false;
-		}
 	}
 	
-	bool hasAlly() {
-		if (_ally) {
-			return true;
-		}
-		else {
-			return false;
-		}
-	}
+	//Actualizamos la posicion de los enemigos y aliados
+	void update() {
+		framesSinceShoot++;
 
-	void defeatEnemy() {
-		delete _enemy;
-		_enemy = NULL;
-	}
+		//Llamamos
+		for (int i = 0; i < 5; i++) {
+			_positions[i].update(_wnd);
+			
+			if (_positions[i].enemyFire()) {
+				playerHurt = true;
+				lives--;
+				framesSinceShoot = 0;
 
-	void hurtAlly() {
-		delete _ally;
-		_ally = NULL;
-	}
+				_wnd->draw(red);
 
-	void Draw(RenderWindow* _wnd) {
-		if (_enemy) {
-			_enemy->Draw(_wnd);
-		}
-
-		if (_ally) {
-			_ally->Draw(_wnd);
-		}
-	}
-
-	void setCoordenates(int position) {
-		switch (position) {
-		case 0:
-			//Ventana superior izquierda
-			coordX = 150.0f;
-			coordY = 150.0f;
-			break;
-		case 1:
-			//Ventana superior derecha
-			coordX = 550.0f;
-			coordY = 150.0f;
-			break;
-		case 2:
-			//Ventana inferior izquierda
-			coordX = 150.0f;
-			coordY = 370.0f;
-			break;
-		case 3:
-			//Puerta de entrada
-			coordX = 330.0f;
-			coordY = 370.0f;
-			break;
-		case 4:
-			//Ventana inferior derecha
-			coordX = 550.0f;
-			coordY = 370.0f;
-			break;
-		}
-	}
-
-	bool enemyFire(){
-		return eneShot;
-	}
-
-	void update(RenderWindow* _wnd) {
-		if (_enemy) {
-			bool enemyShoot = _enemy->Update(_wnd);
-
-			eneShot = enemyShoot;
-
-		} else if (_ally) {
-			bool allyAlive = _ally->Update(_wnd);
-
-			if (!allyAlive) {
-				hurtAlly();
-			}
-
-		} else {
-			if (rand() % 100 < 50) {
-				_enemy = new Enemy(coordX, coordY);
-			} else if (rand() % 100 < 75) {
-				_ally = new Ally(coordX, coordY);
+				updateLives();
 			}
 		}
+
+		if (framesSinceShoot == 50) {
+			playerHurt = false;
+		}
 	}
 
+	//Chequeamos colisiones con el disparo en enemigos y aliados
+	void shoot() {
+		Vector2f playerPos = _player->gettingPosition();
+
+		for (int i = 0; i < 5; i++) {
+			if (_positions[i].onTop(playerPos.x, playerPos.y)) {
+				if (_positions[i].hasEnemy()) {
+					_positions[i].defeatEnemy();
+					points += 10;
+				}
+				else if (_positions[i].hasAlly()) {
+					_positions[i].hurtAlly();
+					points -= 10;
+					lives--;
+				}
+			}
+		}
+
+		updateScore();
+		updateLives();
+	}
+
+	//Dibujar los elementos de juego
+	void drawing() {
+		_wnd->clear();
+
+		//El fondo del oeste
+		_wnd->draw(West);
+
+		//Se dibujan los enemigos y aliados segun la posicion
+		for (int i = 0; i < 5; i++) { 
+			_positions[i].Draw(_wnd);
+		}
+
+		//Texto "Score" y la puntuacion
+		_wnd->draw(Score);
+		_wnd->draw(_score);
+		
+		//Texto "Lives" y las vidas
+		_wnd->draw(Lives);
+		_wnd->draw(_lives);
+		
+		//La mira
+		_player->Draw(_wnd);
+		
+		if (playerHurt == true || framesSinceShoot < 50) {
+			_wnd->draw(red);
+		}
+
+		//Si el jugador se queda sin vidas, se termina el juego
+		if (lives <= 0) {
+			lives = 0;
+			_wnd->draw(GameOver);
+			
+			delete _player;
+		}
+
+		_wnd->display();
+	}
+
+	//El juego que se cargara en el main.cpp
+	void Gunman() {
+		srand(time(NULL));
+
+		while (_wnd->isOpen()) {
+			process();
+			update();
+			drawing();
+		}
+	}
+
+	~Game() {
+		delete _player;
+		delete[] _positions;
+		delete _wnd;
+	}
 };

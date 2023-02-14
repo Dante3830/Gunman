@@ -1,222 +1,217 @@
 #pragma once
+
 #include "stdafx.h"
-#include "Position.h"
-#include "Player.h"
+#include "Bat.h"
+#include "Ball.h"
+#include "AIBat.h"
+#include "Constants.h"
 
 class Game {
-
 private:
-	//Texturas y sprites
-	Texture background;
-	Texture Red;
-	Sprite West;
-	Sprite red;
+    Font font;
+    SoundBuffer buffer;
+    Sound music;
 
-	//Los objetos que necesita el juego
-	RenderWindow* _wnd;
-	PlayerCrossHair* _player;
-	Position* _positions;
+    Text title;
+    Text startMessage;
 
-	//La fuente y textos
-	Font font;
-	Text Score;
-	Text _score;
-	Text Lives;
-	Text _lives;
-	Text GameOver;
+    Text _BatScore;
+    Text _aiBatScore;
 
-	//Puntuacion y vidas
-	int points;
-	int lives;
+    Text finishMessage1;
+    Text finishMessage2;
 
-	bool playerHurt = false;
+    void updateBatScore() {
+        char bts[10];
+        _itoa_s(batScore, bts, 10);
+        _BatScore.setString(bts);
+    }
 
-	//Transformar el entero de puntuacion a string
-	void updateScore() {
-		char pts[100];
-		_itoa_s(points, pts, 10);
-		_score.setString(pts);
-	}
-
-	//Transformar el entero de vidas a string
-	void updateLives() {
-		char pts[10];
-		_itoa_s(lives, pts, 10);
-		_lives.setString(pts);
-	}
+    void updateAiBatScore() {
+        char aibts[10];
+        _itoa_s(aiBatScore, aibts, 10);
+        _aiBatScore.setString(aibts);
+    }
 
 public:
 
-	Game() {
-		_wnd = new RenderWindow(VideoMode(800, 600), "Crosshair");
-		_player = new PlayerCrossHair();
-		_positions = new Position[5];
+    Game() {
+        // Mensaje del inicio
+        title.setCharacterSize(90);
+        title.setPosition(windowWidth / 2 - 400, windowHeight / 2 - 100);
+        title.setFont(font);
+        title.setFillColor(Color::Color(21, 182, 185));
+        title.setString("     PONG");
 
-		for (int i = 0; i < 5; i++) {
-			_positions[i].setCoordenates(i);
-		}
-		
-		points = 0;
-		lives = 3;
+        startMessage.setCharacterSize(30);
+        startMessage.setPosition(windowWidth / 2 - 400, windowHeight / 2 - 100);
+        startMessage.setFont(font);
+        startMessage.setString("\n\n\n\n\n\n\n\n      Presiona las flechas para iniciar");
 
-		background.loadFromFile("Images/West.png");
-		West.setTexture(background);
+        // Mensaje de victoria
+        finishMessage1.setCharacterSize(30);
+        finishMessage1.setPosition(windowWidth / 2 - 400, windowHeight / 2 - 100);
+        finishMessage1.setFont(font);
+        finishMessage1.setFillColor(Color::White);
+        finishMessage1.setString("                 ¡Ganaste!\n\n   Presiona cualquier tecla para reiniciar");
 
-		Red.loadFromFile("Images/fondoRojo.jpg");
-		red.setTexture(Red);
-		red.setColor(Color::Color(255, 255, 255, 100));
-		red.setScale(2.0f, 1.0f);
+        // Mensaje de derrota
+        finishMessage2.setCharacterSize(30);
+        finishMessage2.setPosition(windowWidth / 2 - 400, windowHeight / 2 - 100);
+        finishMessage2.setFont(font);
+        finishMessage2.setFillColor(Color::White);
+        finishMessage2.setString("                 Perdiste...\n\n   Presiona cualquier tecla para reiniciar");
 
-		font.loadFromFile("Retro_Gaming.ttf");
+        //Mostrar puntaje del jugador
+        _BatScore.setCharacterSize(60);
+        _BatScore.setPosition(800.0f, 100.0f);
+        _BatScore.setFont(font);
+        _BatScore.setFillColor(Color::White);
 
-		//Mostrar el puntaje
-		Score.setFont(font);
-		Score.setPosition(0.0f, 0.0f);
-		Score.setCharacterSize(30.0f);
-		Score.setFillColor(Color::Color(115, 55, 8));
-		Score.setString("Score");
+        //Mostrar puntaje de la IA
+        _aiBatScore.setCharacterSize(60);
+        _aiBatScore.setPosition(200.0f, 100.0f);
+        _aiBatScore.setFont(font);
+        _aiBatScore.setFillColor(Color::White);
 
-		_score.setFont(font);
-		_score.setPosition(0.0f, 30.0f);
-		_score.setCharacterSize(30.0f);
-		_score.setFillColor(Color::Black);
+        updateBatScore();
+        updateAiBatScore();
+    }
 
-		//Mostrar las vidas
-		Lives.setFont(font);
-		Lives.setPosition(698.0f, 0.0f);
-		Lives.setCharacterSize(30.0f);
-		Lives.setFillColor(Color::Color(115, 55, 8));
-		Lives.setString("Lives");
+    void musicAndFont() {
+        //Cargando la fuente 
+        font.loadFromFile("VCR_OSD_MONO.ttf");
 
-		_lives.setFont(font);
-		_lives.setPosition(700.0f, 30.0f);
-		_lives.setCharacterSize(30.0f);
-		_lives.setFillColor(Color::Black);
+        //Seteando la musica
+        buffer.loadFromFile("MainMusic.wav");
+        music.setBuffer(buffer);
+    }
 
-		//Mostrar "Game Over" cuando el jugador pierda
-		GameOver.setFont(font);
-		GameOver.setPosition(230.0f, 250.0f);
-		GameOver.setCharacterSize(50.0f);
-		GameOver.setFillColor(Color::Red);
-		GameOver.setString("GAME OVER");
+    //void logic() {
 
-		updateScore();
-		updateLives();
+    //}
 
-	}
+    void pong() {
+        RenderWindow window(VideoMode(windowWidth, windowHeight), "Pong");
 
-	//Procesamos los eventos que ocurran
-	void process() {
-		Event evt;
+        //Creando los objetos
+        Bat bat(20, windowHeight / 2);
+        Ball ball(windowWidth / 2 + 50, windowHeight / 2);
+        AIBat aibat(windowWidth - 40, windowHeight / 2);
 
-		while (_wnd->pollEvent(evt)) {
-			switch (evt.type) {
-			case Event::Closed:
-				_wnd->close();
-				break;
-			case Event::MouseMoved:
-				_player->Positionate(evt.mouseMove.x, evt.mouseMove.y);
-				break;
-			case Event::MouseButtonPressed:
-				if (evt.mouseButton.button == Mouse::Button::Left)
-					shoot();
-				break;
-			}
-		}
+        musicAndFont();
 
-	}
-	
-	//Actualizamos la posicion de los enemigos y aliados
-	void update() {
-		//Llamamos
-		for (int i = 0; i < 5; i++) {
-			_positions[i].update(_wnd);
-			
-			if (_positions[i].enemyFire()) {
-				playerHurt = true;
-				lives--;
+        while (window.isOpen()) {
 
-				_wnd->draw(red);
+            // Limpiar y dibujar fondo
+            window.clear(Color(34, 34, 34, 100));
 
-				updateLives();
-			}
-		}
-	}
+            window.setFramerateLimit(480);
 
-	//Chequeamos colisiones con el disparo en enemigos y aliados
-	void shoot() {
-		Vector2f playerPos = _player->gettingPosition();
+            music.play();
 
-		for (int i = 0; i < 5; i++) {
-			if (_positions[i].onTop(playerPos.x, playerPos.y)) {
-				if (_positions[i].hasEnemy()) {
-					_positions[i].defeatEnemy();
-					points += 10;
-				}
-				else if (_positions[i].hasAlly()) {
-					_positions[i].hurtAlly();
-					points -= 10;
-					lives--;
-				}
-			}
-		}
+            Event event;
+            while (window.pollEvent(event)) {
+                if (event.type == event.Closed) {
+                    window.close();
+                }
+            }
 
-		updateScore();
-		updateLives();
-	}
+            // Controles del usuario
+            if (((event.type == event.KeyPressed) && event.key.code == Keyboard::Up)) {
+                bat.moveBatUp();
+            }
+            else if (((event.type == event.KeyPressed) && event.key.code == Keyboard::Down)) {
+                bat.moveBatDown();
+            }
 
-	//Dibujar los elementos de juego
-	void drawing() {
-		_wnd->clear();
+             // Logica
+            ball.reboundSides();
+            ball.passLeft();
+            ball.passRight();
 
-		//El fondo del oeste
-		_wnd->draw(West);
+            if (ball.getBallFloatRect().intersects(bat.getBatFloatRect())) {
+                ball.reboundBatorAI();
+            }
 
-		//Se dibujan los enemigos y aliados segun la posicion
-		for (int i = 0; i < 5; i++) { 
-			_positions[i].Draw(_wnd);
-		}
+            if (ball.getBallFloatRect().intersects(aibat.getAIBatFloatRect())) {
+                ball.reboundBatorAI();
+            }
 
-		//Texto "Score" y la puntuacion
-		_wnd->draw(Score);
-		_wnd->draw(_score);
-		
-		//Texto "Lives" y las vidas
-		_wnd->draw(Lives);
-		_wnd->draw(_lives);
-		
-		//La mira
-		_player->Draw(_wnd);
-		
-		if (playerHurt == true) {
-			_wnd->draw(red);
-		}
+            if (ball.getBallFloatRect().top > (aibat.getAIBatFloatRect().top) + 50) {
+                if (aiBatCounter % 60 == 0) {
+                    aibat.moveAIBatDown();
+                }
+            }
 
-		//Si el jugador se queda sin vidas, se termina el juego
-		if (lives <= 0) {
-			lives = 0;
-			_wnd->draw(GameOver);
-			
-			delete _player;
-		}
+            if (ball.getBallFloatRect().top < (aibat.getAIBatFloatRect().top) + 50) {
+                if (aiBatCounter % 60 == 0) {
+                    aibat.moveAIBatUp();
+                }
+            }
 
-		_wnd->display();
-	}
+            if (ball.getBallPosition.x > windowWidth) {
+                aibat.AIBatSpeedReverse();
+            }
 
-	//El juego que se cargara en el main.cpp
-	void Gunman() {
-		srand(time(NULL));
+             // Actualizacion
+            if (aiBatCounter == 1000000) {
+                aiBatCounter = 0;
+            }
 
-		while (_wnd->isOpen()) {
-			process();
-			update();
-			drawing();
-		}
-	}
+            aiBatCounter++;
+            
+            ball.update();
+            bat.update();
+            aibat.update();
 
-	~Game() {
-		delete _player;
-		delete[] _positions;
-		delete _wnd;
-	}
+            // Textos e iniciacion //
+
+            if (batScore == 10) {
+                //En caso de victoria
+                window.draw(finishMessage1);
+                ball.stop();
+
+                if (event.type == event.KeyPressed) {
+                    aiBatScore = 0;
+                    batScore = 0;
+                    ball.resetVelocity();
+                }
+
+            } else if (aiBatScore == 10) {
+                //En caso de derrota
+                window.draw(finishMessage2);
+                ball.stop();
+
+                if (event.type == event.KeyPressed) {
+                    aiBatScore = 0;
+                    batScore = 0;
+                    ball.resetVelocity();
+                }
+
+            } else if (batScore == -1) {
+                window.draw(title);
+                window.draw(startMessage);
+                ball.stop();
+
+                if (event.type == event.KeyPressed) {
+                    aiBatScore = 0;
+                    batScore = 0;
+
+                    //Mostrar puntaje de cada uno
+                    window.draw(_BatScore);
+                    window.draw(_aiBatScore);
+
+                    ball.resetVelocity();
+                }
+
+            } else {
+                window.draw(bat.getBatObject());
+                window.draw(ball.getBallObject());
+                window.draw((aibat.getAIBatObject()));
+            }
+
+            window.display();
+        }
+    }
 };
